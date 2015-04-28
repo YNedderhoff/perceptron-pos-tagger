@@ -100,7 +100,7 @@ class posTagger(object):
 				procs = []
 
 				for tag in classifiers:
-				    p = multiprocessing.Process(target=classifyToken, args=(classifiers[tag], t, tag,q))
+				    p = multiprocessing.Process(target=self.classifyToken, args=(classifiers[tag], t, tag,q))
 				    procs.append(p)
 				    p.start()
 
