@@ -2,6 +2,7 @@ import codecs
 import time
 import cPickle
 import gzip
+import multiprocessing
 
 import modules.token as tk
 import modules.perceptron as perceptron
@@ -26,7 +27,12 @@ class posTagger(object):
 		stream = gzip.open(file_name, "rb")
 		model = cPickle.load(stream)
 		stream.close()
-		return model	
+		return model
+
+	def classifyToken(self,classifier, token, tag, q):
+		result = {tag : classifier.classify(token.sparse_feat_vec)}
+		q.put(result) 
+			
 
         # train the classifiers using the perceptron algorithm:
 	def train(self, file_in, file_out, max_iterations):
@@ -87,17 +93,29 @@ class posTagger(object):
 				#expanded_feat_vec = t.expandFeatVec(len(feat_vec))
 				
 				arg_max = ["", 0.0]
+
+
+				####
+				q = multiprocessing.Queue()
+				procs = []
+
 				for tag in classifiers:
-					#temp = classifiers[tag].classify(expanded_feat_vec)
-                                        temp = classifiers[tag].classify(t.sparse_feat_vec)
+				    p = multiprocessing.Process(target=classifyToken, args=(classifiers[tag], t, tag,q))
+				    procs.append(p)
+				    p.start()
 
-					# remember highest classification result:
-					if temp > arg_max[1]:
-						arg_max[0] = tag
-						arg_max[1] = temp
 
+				results = {}
+				for i in range(len(procs)):
+				    results.update(q.get())
+
+
+				for p in procs:
+				    p.join()
+
+				argmax = sorted(results.items(), key = lambda x: x[1])[-1]
                                 # adjust classifier weights for incorrectly predicted tag and gold tag:
-				if arg_max[0] != t.gold_pos:
+				if argmax[0] != t.gold_pos:
 					#classifiers[t.gold_pos].adjust_weights(expanded_feat_vec, True, 0.1)
 					#classifiers[arg_max[0]].adjust_weights(expanded_feat_vec, False, 0.1)
                                         classifiers[t.gold_pos].adjust_weights(t.sparse_feat_vec, True, 0.1)
@@ -217,7 +235,6 @@ class posTagger(object):
                                         feat_vec["next_form_"+token.form] = len(feat_vec)
 
 		return feat_vec
-
 
 if __name__=='__main__':
         
