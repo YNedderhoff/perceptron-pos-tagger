@@ -2,8 +2,7 @@ import codecs
 import time
 import cPickle
 import gzip
-import threading
-import Queue
+import multiprocessing
 
 import modules.token as tk
 import modules.perceptron as perceptron
@@ -30,11 +29,9 @@ class posTagger(object):
                 stream.close()
                 return model
 
-        def classifyToken(self, classifier, token, tag, q):
+        def classifyToken(self,classifier, token, tag, q):
                 result = {tag : classifier.classify(token.sparse_feat_vec)}
-                self.queue_lock.acquire()
-                q.put(result)
-                self.queue_lock.release()
+                q.put(result) 
                         
 
         # train the classifiers using the perceptron algorithm:
@@ -85,45 +82,41 @@ class posTagger(object):
                 for tag in tag_set:
                         classifiers[tag] = perceptron.classifier(len(feat_vec))
 
-                q = Queue.Queue(len(tag_set))
-                self.queue_lock = threading.Lock()
+                q = multiprocessing.Queue()
                 # train the classifiers:
                 for i in range(max_iterations):
                         print "\t\tEpoch "+str(i+1)
-                        for ind, token in enumerate(tokens):
+                        for ind, t in enumerate(tokens):
                                 if ind % (len(tokens)/10) == 0 and not ind == 0:
                                         print "\t\t\t"+ str(ind) + "/" + str(len(tokens))
 
                                 # expand sparse token feature vectors into all dimensions:
                                 #expanded_feat_vec = t.expandFeatVec(len(feat_vec))
                                 
-                                threads = []
+                                procs = []
 
                                 for tag in classifiers:
-                                        thread = threading.Thread(target=self.classifyToken, args=(classifiers[tag], token, tag, q))
-                                        threads.append(thread)
-                                        thread.start()
+                                    p = multiprocessing.Process(target=self.classifyToken, args=(classifiers[tag], t, tag,q))
+                                    procs.append(p)
+                                    p.start()
 
 
                                 results = {}
-
-                                for thread in threads:
-                                    thread.join()
-                                
-                                self.queue_lock.acquire()
-                                for i in range(len(threads)):
+                                for i in range(len(procs)):
                                     results.update(q.get())
-                                self.queue_lock.release()
-                                
+
+
+                                for p in procs:
+                                    p.join()
 
                                 arg_max = sorted(results.items(), key = lambda x: x[1])[-1]
                                 #print arg_max
                                 # adjust classifier weights for incorrectly predicted tag and gold tag:
-                                if arg_max[0] != token.gold_pos:
-                                        #classifiers[token.gold_pos].adjust_weights(expanded_feat_vec, True, 0.1)
+                                if arg_max[0] != t.gold_pos:
+                                        #classifiers[t.gold_pos].adjust_weights(expanded_feat_vec, True, 0.1)
                                         #classifiers[arg_max[0]].adjust_weights(expanded_feat_vec, False, 0.1)
-                                        classifiers[token.gold_pos].adjust_weights(token.sparse_feat_vec, True, 0.1)
-                                        classifiers[arg_max[0]].adjust_weights(token.sparse_feat_vec, False, 0.1)
+                                        classifiers[t.gold_pos].adjust_weights(t.sparse_feat_vec, True, 0.1)
+                                        classifiers[arg_max[0]].adjust_weights(t.sparse_feat_vec, False, 0.1)
 
                 # after training is completed, save classifier vectors (model) to file:
                 self.save(file_out, [feat_vec, classifiers])
