@@ -12,7 +12,7 @@ head -1000 $CORPORA/dev.col >> $CORPORA/dev_top5000.col
 
 #  Train the model
 #python tagger.py -train -i $CORPORA/train.col -e 5 -m model
-python tagger.py -train -i $CORPORA/train_top5000.col -e 10 -m model
+python tagger.py -train -i $CORPORA/train_top5000.col -e 1 -m model
 
 # Test the model
 #python tagger.py -test -i $CORPORA/dev.col -m model -o prediction.col
