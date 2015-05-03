@@ -11,12 +11,17 @@ head -1000 $CORPORA/dev.col >> $CORPORA/dev_top5000.col
 #python tagger.py -feat -i $CORPORA/train.col
 
 #  Train the model
+<<<<<<< HEAD
 #python tagger.py -train -i $CORPORA/train.col -e 5 -m model
 python tagger.py -train -i $CORPORA/train_top5000.col -e 1 -m model
+=======
+python tagger.py -train -i $CORPORA/train.col -e 5 -m model
+#python tagger.py -train -i $CORPORA/train_top5000.col -e 5 -m model
+>>>>>>> parent of c9128b4... Implemented multithreading (threading module)
 
 # Test the model
-#python tagger.py -test -i $CORPORA/dev.col -m model -o prediction.col
-python tagger.py -test -i $CORPORA/dev_top5000.col -m model -o prediction.col
+python tagger.py -test -i $CORPORA/dev.col -m model -o prediction.col
+#python tagger.py -test -i $CORPORA/dev_top5000.col -m model -o prediction.col
 
 # Evaluate the results
 python tagger.py -ev -i prediction.col -o evaluation.txt
