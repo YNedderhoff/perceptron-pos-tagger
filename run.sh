@@ -5,10 +5,12 @@ CORPORA="../team-lab-ss2015/data/pos"
 train=0
 test=0
 evaluate=0
-tag=1
+tag=0
 
 #head -20000 $CORPORA/train.col >> $CORPORA/train_top5000.col
 #head -20000 $CORPORA/dev.col >> $CORPORA/dev_top5000.col
+
+python -u 10-fold-cross-validation.py -i $CORPORA/train.col -t 1 -s 10 -o1 one_fold.col -o2 nine_folds.col
 
 if [ "$train" = 1 ]; then
     #python -u tagger.py -train -i $CORPORA/train.col -e 5 -m model

@@ -416,8 +416,6 @@ if __name__ == '__main__':
     else:
         if args.train:
             print "Running in training mode\n"
-            if not args.top_x_form:
-                print args.top_x_form
             top_x = [args.top_x_form, args.top_x_word_len, args.top_x_position, args.top_x_prefix, args.top_x_suffix, args.top_x_lettercombs]
             t.train(args.in_file, args.model, int(args.epochs), top_x, args.decrease_alpha, args.shuffle_tokens, args.batch_training)
 
