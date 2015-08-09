@@ -101,7 +101,7 @@ class posTagger(object):
             # batch training:
             predictions = {}
             for tag in classifiers:
-                predictions[tag] = classifiers[tag].weight_vector
+                predictions[tag] = [x for x in classifiers[tag].weight_vector]
             print "\t\tEpoch " + str(i) + ", alpha = " + str(alpha)
             for ind, t in enumerate(tokens):
                 if ind % (len(tokens) / 10) == 0 and not ind == 0:
@@ -133,7 +133,7 @@ class posTagger(object):
             # apply batch results to weight vectors:
             if batch_training:
                 for tag in classifiers:
-                    classifiers[tag].weight_vector = predictions[tag]
+                    classifiers[tag].weight_vector = [x for x in predictions[tag]]
 
             # decrease alpha
             if decrease_alpha:
